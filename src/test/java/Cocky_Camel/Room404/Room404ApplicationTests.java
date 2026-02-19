@@ -1,10 +1,10 @@
-package Cocky_Camel.hospital;
+package Cocky_Camel.Room404;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class HospitalApplicationTests {
+class Room404ApplicationTests {
 
 	@Test
 	void contextLoads() {
