@@ -1,4 +1,4 @@
-package Cocky_Camel.hospital;
+package Cocky_Camel.Room404;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,14 +8,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 @RestController
-public class HospitalApplication {
+public class Room404Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(HospitalApplication.class, args);
+		SpringApplication.run(Room404Application.class, args);
 	}
 
-	@GetMapping("/nurse/prueba/{prueba}")
-	public String nurse(@PathVariable String prueba) {
-		return String.format("Hello %s!", prueba);
+	@GetMapping("/user/prueba/{prueba}")
+	public String testUser(@PathVariable String prueba) {
+		return String.format("Hello %s, ¡bienvenido a Room404!", prueba);
 	}
 }
