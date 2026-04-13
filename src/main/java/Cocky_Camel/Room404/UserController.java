@@ -2,22 +2,18 @@ package Cocky_Camel.Room404;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Collections; 
 import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import java.io.InputStream;
-import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
 @RestController 
 @RequestMapping("/api")
@@ -127,5 +123,40 @@ public class UserController {
 		} else {
 			return ResponseEntity.status(404).body("No se encontró ningún usuario con el ID: " + requestedId);
 		}
+	}
+	
+	@PostMapping("/user/google-login")
+	public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> data) {
+	    String idTokenString = data.get("idToken");
+	    
+	    GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+	        .setAudience(Collections.singletonList("436902612551-pt3s24i3uth56jebunl199phsh3d30ks.apps.googleusercontent.com"))
+	        .build();
+
+	    try {
+	        GoogleIdToken idToken = verifier.verify(idTokenString);
+	        if (idToken != null) {
+	            GoogleIdToken.Payload payload = idToken.getPayload();
+	            String email = payload.getEmail();
+	            String googleUid = payload.getSubject();
+	            String name = (String) payload.get("name");
+
+	            User user = userRepository.findByEmailIgnoreCase(email);
+
+	            if (user == null) {
+	                user = new User();
+	                user.setEmail(email);
+	                user.setNickname(name);
+	                user.setGoogleUid(googleUid);
+	                user.setRole(User.Role.User);
+	                user.setPremium(true);
+	                userRepository.save(user);
+	            }
+	            return ResponseEntity.ok("Login social correcto");
+	        }
+	    } catch (Exception e) {
+	        return ResponseEntity.status(401).body("Error validando Google Token");
+	    }
+	    return ResponseEntity.status(401).body("Acceso denegado");
 	}
 }
