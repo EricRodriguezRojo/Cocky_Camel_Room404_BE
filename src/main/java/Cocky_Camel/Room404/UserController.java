@@ -173,4 +173,24 @@ public class UserController {
 	        return ResponseEntity.status(401).body(error);
 	    }
 	}
+	
+	@Autowired
+	private EmailService emailService;
+	 
+	@PostMapping("/game/trigger-malware")
+	public ResponseEntity<?> triggerMalware(@RequestHeader("Authorization") String token) {
+	    try {
+	        String cleanToken = token.replace("Bearer ", "");
+	        String email = jwtUtil.getEmailFromToken(cleanToken);
+	        User user = userRepository.findByEmailIgnoreCase(email);
+	        emailService.sendMalwareEmail(email, user.getNickname());
+	        Map<String, String> response = new HashMap<>();
+	        response.put("message", "Email enviado con éxito");
+	        return ResponseEntity.ok(response);
+	    } catch (Exception e) {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("message", "Error al procesar el email: " + e.getMessage());
+	        return ResponseEntity.status(500).body(error);
+	    }
+	}
 }
