@@ -88,6 +88,12 @@
 		    <scope>test</scope>
 		</dependency>
 		
+		<!-- Starter Email -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		
 		<!-- Mockito Core (para mocks en los tests) -->
 		<dependency>
 		    <groupId>org.mockito</groupId>
