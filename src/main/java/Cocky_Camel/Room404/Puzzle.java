@@ -1,5 +1,7 @@
 package Cocky_Camel.Room404;
 
+
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -8,26 +10,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "PUZZLES")
+@Table(name = "puzzles")
 public class Puzzle {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
     private Integer id;
-
-    @Column(name = "name", nullable = false, length = 255)
-    private String name;
-
-    @Column(name = "difficulty", nullable = false)
-    private Integer difficulty;
-
-    @Column(name = "solution_hash", nullable = false, length = 255)
+    
+    private String name; 
+    private Integer difficulty; 
+    
+    @Column(name = "solution_hash")
     private String solutionHash;
-
-    @Column(name = "max_score", nullable = false)
+    
+    @Column(name = "max_score")
     private Integer maxScore;
-
     public Puzzle() {
     }
 
