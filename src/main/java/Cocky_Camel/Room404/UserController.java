@@ -10,6 +10,7 @@ import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -25,6 +26,12 @@ public class UserController {
 
 	@Autowired
 	private JwtUtil jwtUtil;
+
+	@Autowired
+	private EmailService emailService;
+
+	@Autowired
+	private BCryptPasswordEncoder passwordEncoder;
 
 	@GetMapping("/users")
 	public ResponseEntity<List<User>> getAllUsers() {
@@ -59,7 +66,7 @@ public class UserController {
 	public ResponseEntity<?> login(@PathVariable String email, @PathVariable String password) {
 		User user = userRepository.findByEmailIgnoreCase(email);
 
-		if (user != null && user.getPassword() != null && user.getPassword().equals(password)) {
+		if (user != null && user.getPassword() != null && passwordEncoder.matches(password, user.getPassword())) {
 			String token = jwtUtil.generateToken(email);
 			Map<String, String> response = new HashMap<>();
 			response.put("token", token);
@@ -81,6 +88,9 @@ public class UserController {
 		}
 
 		try {
+			if (user.getPassword() != null) {
+				user.setPassword(passwordEncoder.encode(user.getPassword()));
+			}
 			User savedUser = userRepository.save(user);
 			Map<String, String> response = new HashMap<>();
 			response.put("message", "Usuario creado correctamente con ID: " + savedUser.getId());
@@ -99,7 +109,11 @@ public class UserController {
 			User existingUser = userOptional.get();
 			if (userUpdate.getEmail() != null && !userUpdate.getEmail().isEmpty()) existingUser.setEmail(userUpdate.getEmail());
 			if (userUpdate.getNickname() != null) existingUser.setNickname(userUpdate.getNickname());
-			if (userUpdate.getPassword() != null) existingUser.setPassword(userUpdate.getPassword());
+			
+			if (userUpdate.getPassword() != null && !userUpdate.getPassword().isEmpty()) {
+				existingUser.setPassword(passwordEncoder.encode(userUpdate.getPassword()));
+			}
+			
 			if (userUpdate.getGoogleUid() != null) existingUser.setGoogleUid(userUpdate.getGoogleUid());
 			if (userUpdate.getRole() != null) existingUser.setRole(userUpdate.getRole());
 			existingUser.setPremium(userUpdate.isPremium());
@@ -173,9 +187,6 @@ public class UserController {
 	        return ResponseEntity.status(401).body(error);
 	    }
 	}
-	
-	@Autowired
-	private EmailService emailService;
 	 
 	@PostMapping("/game/trigger-malware")
 	public ResponseEntity<?> triggerMalware(@RequestHeader("Authorization") String token) {
