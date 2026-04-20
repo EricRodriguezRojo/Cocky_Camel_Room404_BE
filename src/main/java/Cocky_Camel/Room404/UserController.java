@@ -71,6 +71,7 @@ public class UserController {
 			Map<String, String> response = new HashMap<>();
 			response.put("token", token);
 			response.put("message", "Login correcto. Bienvenido/a " + (user.getNickname() != null ? user.getNickname() : user.getEmail()));
+			response.put("role", user.getRole() != null ? user.getRole().name() : "User");
 			return ResponseEntity.ok(response);
 		} else {
 			Map<String, String> error = new HashMap<>();
@@ -175,6 +176,7 @@ public class UserController {
 	            Map<String, String> response = new HashMap<>();
 	            response.put("token", token);
 	            response.put("message", "Login social correcto");
+	            response.put("role", user.getRole() != null ? user.getRole().name() : "User");
 	            return ResponseEntity.ok(response);
 	        } else {
 	            Map<String, String> error = new HashMap<>();
