@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +32,9 @@ public class UserProgressController {
 
     @Autowired
     private PuzzleRepository puzzleRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @GetMapping("/progress")
     public ResponseEntity<List<UserProgress>> getProgress(
@@ -61,7 +65,6 @@ public class UserProgressController {
         }
         return ResponseEntity.status(404).body("No se encontro ningun progreso con ID: " + id);
     }
-
 
     @PostMapping("/progress")
     public ResponseEntity<?> createProgress(@RequestBody UserProgress payload) {
@@ -102,7 +105,6 @@ public class UserProgressController {
         return ResponseEntity.status(201).body(userProgressRepository.save(progress));
     }
 
-    
     @PutMapping("/progress/{id}")
     public ResponseEntity<?> updateProgress(@PathVariable Integer id, @RequestBody UserProgress payload) {
         Optional<UserProgress> progressOptional = userProgressRepository.findById(id);
@@ -170,5 +172,44 @@ public class UserProgressController {
         Map<String, String> response = new HashMap<>();
         response.put("message", text);
         return response;
+    }
+    
+    @PostMapping("/progress/complete/{puzzleName}")
+    public ResponseEntity<?> completePuzzle(
+        @RequestHeader("Authorization") String token, 
+        @PathVariable String puzzleName,
+        @RequestBody Map<String, Integer> body
+    ) {
+        try {
+            String cleanToken = token.replace("Bearer ", "");
+            String email = jwtUtil.getEmailFromToken(cleanToken);
+            User user = userRepository.findByEmailIgnoreCase(email);
+
+            Puzzle puzzle = puzzleRepository.findByNameIgnoreCase(puzzleName);
+            if (puzzle == null) return ResponseEntity.status(404).body("Puzzle no encontrado");
+
+            UserProgress progress = userProgressRepository
+                .findByUserIdAndPuzzleId(user.getId(), puzzle.getId())
+                .orElse(new UserProgress());
+
+            progress.setUser(user);
+            progress.setPuzzle(puzzle);
+            progress.setStatus(UserProgress.Status.COMPLETED);
+            progress.setCompletedAt(LocalDateTime.now());
+            
+            Integer seconds = body.getOrDefault("timeSeconds", 0);
+            progress.setTimeSeconds(seconds);
+
+            userProgressRepository.save(progress);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Progreso guardado correctamente"));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
+    
+    @GetMapping("/ranking")
+    public ResponseEntity<List<RankingDTO>> getRanking() {
+        return ResponseEntity.ok(userProgressRepository.getGlobalRanking());
     }
 }
