@@ -10,7 +10,11 @@ import java.util.Date;
 
 @Component
 public class JwtUtil {
-    private static final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    
+    private static final String SECRET_PHRASE = "Esta_Es_La_Llave_Maestra_De_Room404_No_La_Cambiamos_Nunca_987654321";
+    
+    private static final Key key = Keys.hmacShaKeyFor(SECRET_PHRASE.getBytes());
+    
     private static final long EXPIRATION_TIME = 864000000;
 
     public String generateToken(String email) {
