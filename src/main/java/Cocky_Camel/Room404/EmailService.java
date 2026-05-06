@@ -17,20 +17,21 @@ public class EmailService {
         message.setTo(toEmail);
         message.setSubject("⚠️ [CRITICAL] PROTOCOLO DE RECUPERACIÓN DE DATOS");
         String nombre = (nickname != null) ? nickname : "Sujeto";
+        
+        // PISTA CÓDIGO: 3 7 2 8
         message.setText("Hola " + nombre + ",\n\n" +
                         "Has forzado la entrada al sistema de mensajería cifrada. " +
                         "Como consecuencia, se ha bloqueado el acceso a la 'System Update'.\n\n" +
-                        "Para continuar, resuelve el siguiente enigma:\n" +
+                        "The Architect ha dejado este fragmento en tu memoria caché:\n" +
                         "--------------------------------------------------\n" +
-                        "«Soy el número del vacío digital.\n" +
-                        "Aparezco cuando buscas lo que no existe.\n" +
-                        "Dos veces el mismo par, rodeando el nada.\n" +
-                        "¿Cuál es el código del Error?»\n" +
+                        "«Los colores de luz principales que forman tu pantalla (RGB).\n" +
+                        "Los días de la semana que vigilo cada uno de tus pasos.\n" +
+                        "Los únicos símbolos que entiende esta máquina: encendido o apagado.\n" +
+                        "Las patas de la araña que teje la gran Red mundial (Web).»\n" +
                         "--------------------------------------------------\n\n" +
-                        "Introduce la respuesta en la Terminal de Actualización (System Update).\n" +
+                        "Introduce el código en la Terminal de Actualización (System Update).\n" +
                         "El tiempo corre.");
+                        
         mailSender.send(message);
     }
 }
-
-
