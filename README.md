@@ -121,12 +121,6 @@ cd Cocky_Camel_Room404_BE
 
 La aplicación está configurada para usar MySQL. Las credenciales están en `src/main/resources/application.properties`:
 
-```properties
-spring.datasource.url=jdbc:mysql://room404_mayfairmud:e508df5cfd4122a5c75cfd26e69fcbca9eef00a7@5ui413.h.filess.io:3306/room404_mayfairmud
-spring.datasource.username=room404_mayfairmud
-spring.datasource.password=e508df5cfd4122a5c75cfd26e69fcbca9eef00a7
-```
-
 **Nota:** Para desarrollo local, puedes cambiar estas configuraciones para apuntar a una base de datos MySQL local.
 
 ### 3. Configurar Correo Electrónico
