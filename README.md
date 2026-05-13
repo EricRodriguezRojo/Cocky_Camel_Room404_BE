@@ -345,4 +345,3 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
 
 ---
 
-<parameter name="filePath">c:\Users\lemvo\git\Cocky_Camel_Room404_BE\README.md
