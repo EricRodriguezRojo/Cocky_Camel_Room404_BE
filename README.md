@@ -4,8 +4,6 @@
 
 Room404 es una aplicación de rompecabezas (puzzles) interactiva desarrollada como proyecto backend en Spring Boot para el **Proyecto Intermodular** del grado superior de DAM. La aplicación permite a los usuarios registrarse, autenticarse, resolver puzzles de diferentes dificultades y hacer seguimiento de su progreso. Incluye funcionalidades como autenticación JWT, integración con Google OAuth, envío de correos electrónicos para recuperación de contraseña, y un sistema de rankings.
 
-**Nota:** Este repositorio contiene únicamente el backend de la aplicación. El frontend correspondiente se desarrollará por separado y se conectará a este servidor una vez esté activo.
-
 ## Mecánicas de Juego
 
 Room404 es un juego de puzzles con temática de ciberseguridad y "Matrix". Las mecánicas principales incluyen:
