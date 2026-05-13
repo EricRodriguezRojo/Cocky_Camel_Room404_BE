@@ -319,39 +319,6 @@ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   http://localhost:8080/api/puzzles
 ```
 
-## Testing
-
-### Ejecutar Tests
-
-```bash
-mvn test
-```
-
-### Tests Disponibles
-
-- **UserControllerTest**: Tests para endpoints de usuario
-- **Room404ApplicationTests**: Tests básicos de integración
-
-## Despliegue
-
-### Variables de Entorno
-
-Para producción, configura estas variables de entorno:
-
-```bash
-# Base de datos
-DB_URL=jdbc:mysql://localhost:3306/room404_prod
-DB_USERNAME=prod_user
-DB_PASSWORD=prod_password
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key
-
-# Correo
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
-```
-
 ## Contribución
 
 1. Fork el proyecto
