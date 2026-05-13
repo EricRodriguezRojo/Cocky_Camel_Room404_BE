@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.dao.DataAccessException;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -31,6 +32,9 @@ public class UserController {
 	private EmailService emailService;
 
 	@Autowired
+	private PasswordResetService passwordResetService;
+
+	@Autowired
 	private BCryptPasswordEncoder passwordEncoder;
 
 	@GetMapping("/users")
@@ -48,6 +52,140 @@ public class UserController {
 		Map<String, String> error = new HashMap<>();
 		error.put("message", "No se encontró ningún usuario con el email: " + email);
 		return ResponseEntity.status(404).body(error);
+	}
+
+	@PostMapping("/user/verify-reset-token")
+	public ResponseEntity<?> verifyResetToken(@RequestBody Map<String, String> data) {
+		String email = data.get("email");
+		String token = data.get("token");
+		if (email == null || email.trim().isEmpty() || token == null || token.trim().isEmpty()) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "Email y token son obligatorios");
+			return ResponseEntity.badRequest().body(error);
+		}
+		boolean isValid = passwordResetService.isTokenValid(email, token);
+		Map<String, Object> response = new HashMap<>();
+		response.put("isValid", isValid);
+		if (isValid) {
+			response.put("message", "Token válido");
+			return ResponseEntity.ok(response);
+		} else {
+			response.put("message", "Token inválido o expirado");
+			return ResponseEntity.status(401).body(response);
+		}
+	}
+
+	@PostMapping("/user/forgot-password")
+	public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> data) {
+		String email = data.get("email");
+		if (email == null || email.trim().isEmpty()) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "El email es obligatorio");
+			return ResponseEntity.badRequest().body(error);
+		}
+		try {
+			User user = userRepository.findByEmailIgnoreCase(email);
+			if (user == null) {
+				Map<String, String> error = new HashMap<>();
+				error.put("message", "No existe usuario con ese email");
+				return ResponseEntity.status(404).body(error);
+			}
+			String resetToken = String.format("%06d", (int)(Math.random() * 1000000));
+			long expiryTime = System.currentTimeMillis() + (60 * 60 * 1000);
+			passwordResetService.storeToken(email, resetToken, expiryTime);
+			try {
+				emailService.sendPasswordResetEmail(email, user.getNickname(), resetToken);
+				Map<String, String> response = new HashMap<>();
+				response.put("message", "Email de recuperacion enviado correctamente");
+				return ResponseEntity.ok(response);
+			} catch (Exception e) {
+				Map<String, String> error = new HashMap<>();
+				error.put("message", "No se pudo enviar el email de recuperacion: " + e.getMessage());
+				return ResponseEntity.status(502).body(error);
+			}
+		} catch (DataAccessException e) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "No se pudo acceder a la base de datos. El servidor MySQL ha rechazado la conexion.");
+			return ResponseEntity.status(503).body(error);
+		}
+	}
+
+	@PostMapping("/user/reset-password")
+	public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> data) {
+		String email = data.get("email");
+		String token = data.get("token");
+		String newPassword = data.get("newPassword");
+		if (newPassword == null || newPassword.trim().isEmpty()) {
+			newPassword = data.get("password");
+		}
+		if (email == null || email.trim().isEmpty() || token == null || token.trim().isEmpty() || newPassword == null || newPassword.trim().isEmpty()) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "Email, token y contrasena son obligatorios");
+			return ResponseEntity.badRequest().body(error);
+		}
+		User user = userRepository.findByEmailIgnoreCase(email);
+		if (user == null) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "No existe usuario con ese email");
+			return ResponseEntity.status(404).body(error);
+		}
+		if (!passwordResetService.isTokenValid(email, token)) {
+			Map<String, String> error = new HashMap<>();
+			error.put("message", "Token invalido");
+			return ResponseEntity.status(401).body(error);
+		}
+		user.setPassword(passwordEncoder.encode(newPassword));
+		passwordResetService.clearToken(email);
+		userRepository.save(user);
+		Map<String, String> response = new HashMap<>();
+		response.put("message", "Contrasena actualizada correctamente");
+		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/user/google-login")
+	public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> data) {
+	    String idTokenString = data.get("idToken");
+	    
+	    GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+	        .setAudience(Collections.singletonList("436902612551-pt3s24i3uth56jebunl199phsh3d30ks.apps.googleusercontent.com"))
+	        .build();
+
+	    try {
+	        GoogleIdToken idToken = verifier.verify(idTokenString);
+	        if (idToken != null) {
+	            GoogleIdToken.Payload payload = idToken.getPayload();
+	            String email = payload.getEmail();
+	            String googleUid = payload.getSubject();
+	            String name = (String) payload.get("name");
+
+	            User user = userRepository.findByEmailIgnoreCase(email);
+
+	            if (user == null) {
+	                user = new User();
+	                user.setEmail(email);
+	                user.setNickname(name);
+	                user.setGoogleUid(googleUid);
+	                user.setRole(User.Role.User);
+	                user.setPremium(true);
+	                userRepository.save(user);
+	            }
+	            
+	            String token = jwtUtil.generateToken(email);
+	            Map<String, String> response = new HashMap<>();
+	            response.put("token", token);
+	            response.put("message", "Login social correcto");
+	            response.put("role", user.getRole() != null ? user.getRole().name() : "User");
+	            return ResponseEntity.ok(response);
+	        } else {
+	            Map<String, String> error = new HashMap<>();
+	            error.put("message", "Token de Google inválido");
+	            return ResponseEntity.status(401).body(error);
+	        }
+	    } catch (Exception e) {
+	        Map<String, String> error = new HashMap<>();
+	        error.put("message", "Error validando Google Token: " + e.getMessage());
+	        return ResponseEntity.status(401).body(error);
+	    }
 	}
 
 	@GetMapping("/user/{id}")
@@ -144,66 +282,5 @@ public class UserController {
 		}
 	}
 	
-	@PostMapping("/user/google-login")
-	public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> data) {
-	    String idTokenString = data.get("idToken");
-	    
-	    GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-	        .setAudience(Collections.singletonList("436902612551-pt3s24i3uth56jebunl199phsh3d30ks.apps.googleusercontent.com"))
-	        .build();
-
-	    try {
-	        GoogleIdToken idToken = verifier.verify(idTokenString);
-	        if (idToken != null) {
-	            GoogleIdToken.Payload payload = idToken.getPayload();
-	            String email = payload.getEmail();
-	            String googleUid = payload.getSubject();
-	            String name = (String) payload.get("name");
-
-	            User user = userRepository.findByEmailIgnoreCase(email);
-
-	            if (user == null) {
-	                user = new User();
-	                user.setEmail(email);
-	                user.setNickname(name);
-	                user.setGoogleUid(googleUid);
-	                user.setRole(User.Role.User);
-	                user.setPremium(true);
-	                userRepository.save(user);
-	            }
-	            
-	            String token = jwtUtil.generateToken(email);
-	            Map<String, String> response = new HashMap<>();
-	            response.put("token", token);
-	            response.put("message", "Login social correcto");
-	            response.put("role", user.getRole() != null ? user.getRole().name() : "User");
-	            return ResponseEntity.ok(response);
-	        } else {
-	            Map<String, String> error = new HashMap<>();
-	            error.put("message", "Token de Google inválido");
-	            return ResponseEntity.status(401).body(error);
-	        }
-	    } catch (Exception e) {
-	        Map<String, String> error = new HashMap<>();
-	        error.put("message", "Error validando Google Token: " + e.getMessage());
-	        return ResponseEntity.status(401).body(error);
-	    }
-	}
-	 
-	@PostMapping("/game/trigger-malware")
-	public ResponseEntity<?> triggerMalware(@RequestHeader("Authorization") String token) {
-	    try {
-	        String cleanToken = token.replace("Bearer ", "");
-	        String email = jwtUtil.getEmailFromToken(cleanToken);
-	        User user = userRepository.findByEmailIgnoreCase(email);
-	        emailService.sendMalwareEmail(email, user.getNickname());
-	        Map<String, String> response = new HashMap<>();
-	        response.put("message", "Email enviado con éxito");
-	        return ResponseEntity.ok(response);
-	    } catch (Exception e) {
-	        Map<String, String> error = new HashMap<>();
-	        error.put("message", "Error al procesar el email: " + e.getMessage());
-	        return ResponseEntity.status(500).body(error);
-	    }
-	}
+	
 }
