@@ -1,6 +1,7 @@
 package Cocky_Camel.Room404;
  
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -10,15 +11,18 @@ public class EmailService {
  
     @Autowired
     private JavaMailSender mailSender;
+
+    @Value("${spring.mail.username}")
+    private String senderEmail;
  
     public void sendMalwareEmail(String toEmail, String nickname) {
         SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("room404-system@game.com");
+        message.setFrom(senderEmail);
         message.setTo(toEmail);
         message.setSubject("⚠️ [CRITICAL] PROTOCOLO DE RECUPERACIÓN DE DATOS");
         String nombre = (nickname != null) ? nickname : "Sujeto";
         
-        // PISTA CÓDIGO: 3 7 2 8
+        // 3 7 2 8
         message.setText("Hola " + nombre + ",\n\n" +
                         "Has forzado la entrada al sistema de mensajería cifrada. " +
                         "Como consecuencia, se ha bloqueado el acceso a la 'System Update'.\n\n" +
@@ -34,4 +38,23 @@ public class EmailService {
                         
         mailSender.send(message);
     }
+    
+        public void sendPasswordResetEmail(String toEmail, String nickname, String resetToken) {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(senderEmail);
+            message.setTo(toEmail);
+            message.setSubject("🔐 Recuperar contraseña - Room 404");
+            String nombre = (nickname != null) ? nickname : "Usuario";
+        
+            message.setText("Hola " + nombre + ",\n\n" +
+                            "Has solicitado recuperar tu contraseña en Room 404.\n\n" +
+                            "Código de recuperación:\n" +
+                            resetToken + "\n\n" +
+                            "Este código es válido por 1 hora.\n" +
+                            "Si no has solicitado esto, ignora este email.\n\n" +
+                            "Saludos,\n" +
+                            "Sistema de Room 404");
+                        
+            mailSender.send(message);
+        }
 }
